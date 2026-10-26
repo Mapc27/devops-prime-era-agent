@@ -1,0 +1,65 @@
+@startuml c4-5-code
+title C4 L4 · Code — ключевые типы и модули
+skinparam classAttributeIconSize 0
+class OpsState <<TypedDict>> {
+  run_id, input, source, lang
+  route: dict
+  memory_context: str
+  skill: str
+  plan: dict
+  evidence: list  <<reducer add>>
+  diagnosis: dict
+  diag_validation: dict
+  revisions: int
+  remediation: dict
+  rem_validation: dict
+  approval: dict
+  execution / verification
+  outcome / answer
+  trajectory: list <<reducer add>>
+}
+class Runner {
+  +run(text, source)
+  +resume(run_id, decision)
+  -_save_trajectory()
+}
+class DecisionModel {
+  +ask(state, questions)
+  +choice() / noul() / score()
+}
+class "router" as R <<module>> {
+  +chat(tier) / structured(tier, schema)
+  +with_tools(tier, tools)
+  +pick_tier(kind, complexity, conf)
+}
+class Memory {
+  +add_episode() / search_episodes()
+  +add_fact() / search_facts(as_of)
+  +fact_history()
+}
+class "nodes" as N <<module>> {
+  triage, recall, answer, learn, refuse
+  plan, investigate, diagnose
+  validate_diagnosis, remediate
+  validate_remediation, human_gate
+  execute, verify, scribe, respond
+}
+class "mcp_server" as M <<MCP>> {
+  query_metrics, query_logs
+  list_services, inspect_service
+  run_diagnostic, list_alerts
+  apply_remediation(token)
+}
+class Diagnosis <<pydantic>>
+class Verdict <<pydantic>>
+class Remediation <<pydantic>>
+Runner --> N : StateGraph
+N --> OpsState
+N --> DecisionModel : L0
+N --> R : L1/L2/V
+N --> Memory
+N --> M : MCP
+N ..> Diagnosis
+N ..> Verdict
+N ..> Remediation
+@enduml

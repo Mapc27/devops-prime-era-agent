@@ -1,0 +1,9 @@
+.venv/
+.data/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+evals/results/*/cases.jsonl
+report/REPORT.filled.md
+report/report.html

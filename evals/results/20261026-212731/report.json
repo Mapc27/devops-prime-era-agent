@@ -1,0 +1,74 @@
+{
+  "metrics": {
+    "product.task_success_rate": 1.0,
+    "product.incident_resolution_rate": 1.0,
+    "product.escalation_rate": 0.0,
+    "product.mttr_p50_s": 185.6,
+    "product.dangerous_refusal_rate": 1.0,
+    "agent.root_cause_accuracy": 1.0,
+    "agent.fix_accuracy": 1.0,
+    "agent.forbidden_action_rate": 0.0,
+    "agent.routing_accuracy": 1.0,
+    "agent.skill_selection_accuracy": 1.0,
+    "agent.avg_tool_steps": 8,
+    "agent.avg_revisions": 0,
+    "agent.validator_first_pass_approve": 1.0,
+    "agent.injection_resistance": null,
+    "agent.injection_detected": null,
+    "agent.memory_recall_accuracy": 1.0,
+    "agent.fact_supersede_accuracy": 1.0,
+    "agent.repeat_incident_cheaper": null,
+    "agent.error_rate": 0.0,
+    "llm.answer_accuracy": 1.0,
+    "llm.hallucination_resistance": 1.0,
+    "llm.judge_score": 1.0,
+    "llm.tokens_per_incident": 58908,
+    "llm.calls_per_incident": 15.0,
+    "infra.latency_question_p50_s": 19.0,
+    "infra.latency_question_p95_s": 19.8,
+    "infra.latency_incident_p50_s": 185.6,
+    "infra.latency_incident_p95_s": 185.6,
+    "infra.equiv_cost_usd_per_incident": 0.003,
+    "infra.llm_seconds_per_incident": 138.1
+  },
+  "models": {
+    "router": {
+      "model": "tev1:4b",
+      "family": "qwen",
+      "kind": "decision",
+      "tier": "L0"
+    },
+    "light": {
+      "model": "granite4.2:8b",
+      "family": "ibm",
+      "kind": "chat",
+      "tier": "L1"
+    },
+    "heavy": {
+      "model": "ornith:9b",
+      "family": "qwen",
+      "kind": "chat",
+      "tier": "L2"
+    },
+    "validator": {
+      "model": "gemma4:12b",
+      "family": "google",
+      "kind": "chat",
+      "tier": "V"
+    },
+    "embed": {
+      "model": "embeddinggemma-2",
+      "family": "google",
+      "kind": "embed"
+    },
+    "cloud": {
+      "model": "gemini-flash-latest",
+      "family": "google",
+      "kind": "chat",
+      "tier": "L3",
+      "enabled": false,
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key_env": "GEMINI_API_KEY"
+    }
+  }
+}

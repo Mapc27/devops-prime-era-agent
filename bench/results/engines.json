@@ -1,0 +1,53 @@
+[
+  {
+    "model": "granite4.2:8b",
+    "ollama": {
+      "pp_tok_s": 300.3,
+      "tg_tok_s": 36.8,
+      "ttft_ms": 3683,
+      "prompt_tokens": 1107,
+      "format": "gguf",
+      "ollama_ps": "granite4.2:8b    f586c02fdecd    5.8 GB    100% GPU     4096       llamacpp    4 minutes from now"
+    },
+    "llama_cpp": {
+      "pp_tok_s": 291.3,
+      "tg_tok_s": 35.9,
+      "backend": "BLAS,MTL"
+    },
+    "blob_gguf": true
+  },
+  {
+    "model": "qwen2.5:7b-instruct",
+    "ollama": {
+      "pp_tok_s": 366.4,
+      "tg_tok_s": 41.4,
+      "ttft_ms": 4107,
+      "prompt_tokens": 1505,
+      "format": "gguf",
+      "ollama_ps": "qwen2.5:7b-instruct    845dbda0ea48    4.6 GB    100% GPU     4096       llamacpp    4 minutes from now"
+    },
+    "llama_cpp": {
+      "pp_tok_s": 350.2,
+      "tg_tok_s": 41.9,
+      "backend": "BLAS,MTL"
+    },
+    "blob_gguf": true
+  },
+  {
+    "model": "ornith:9b",
+    "ollama": {
+      "pp_tok_s": 310.5,
+      "tg_tok_s": 34.8,
+      "ttft_ms": 4854,
+      "prompt_tokens": 1507,
+      "format": "gguf",
+      "ollama_ps": "ornith:9b    a75697c14589    5.8 GB    100% GPU     4096       llamacpp    4 minutes from now"
+    },
+    "llama_cpp": {
+      "pp_tok_s": 301.7,
+      "tg_tok_s": 34.7,
+      "backend": "BLAS,MTL"
+    },
+    "blob_gguf": true
+  }
+]

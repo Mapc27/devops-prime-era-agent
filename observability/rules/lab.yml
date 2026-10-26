@@ -1,0 +1,32 @@
+groups:
+- name: lab
+  rules:
+  - alert: HighErrorRate
+    expr: sum by (job) (rate(http_requests_total{status=~"5.."}[1m])) / clamp_min(sum by (job) (rate(http_requests_total[1m])), 0.001) > 0.2
+    for: 30s
+    labels: {severity: critical, team: sre, target: opscrew}
+    annotations: {summary: "api 5xx ratio > 20%", value: "{{ $value | humanizePercentage }}"}
+  - alert: ServiceDown
+    expr: lab_container_up == 0
+    for: 30s
+    labels: {severity: critical, team: sre, target: opscrew}
+    annotations: {summary: "service {{ $labels.service }} is not running"}
+  - alert: ContainerRestarting
+    expr: increase(lab_container_restarts[3m]) > 2
+    labels: {severity: warning, team: sre, target: opscrew}
+    annotations: {summary: "{{ $labels.service }} restarted {{ $value }} times in 3m"}
+  - alert: HighLatency
+    expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route="/cart"}[1m]))) > 1
+    for: 30s
+    labels: {severity: warning, team: sre, target: opscrew}
+    annotations: {summary: "api /cart p95 latency > 1s", value: "{{ $value }}s"}
+  - alert: DiskAlmostFull
+    expr: uploads_disk_usage_ratio > 0.9
+    for: 20s
+    labels: {severity: warning, team: sre, target: opscrew}
+    annotations: {summary: "uploads volume {{ $value | humanizePercentage }} full"}
+  - alert: PostgresTooManyConnections
+    expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.85
+    for: 20s
+    labels: {severity: critical, team: sre, target: opscrew}
+    annotations: {summary: "postgres connections at {{ $value | humanizePercentage }} of max"}

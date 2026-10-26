@@ -1,0 +1,24 @@
+@startuml c4-1-landscape
+!include <C4/C4_Context>
+LAYOUT_LEFT_RIGHT()
+title C4 L0 · System Landscape — Ops Crew в окружении SRE-платформы
+Person(oncall, "Дежурный инженер", "SRE / DevOps")
+Person(reviewer, "Ревьюер / AI-platform", "смотрит качество агента")
+Enterprise_Boundary(org, "Организация") {
+  System(opscrew, "Ops Crew", "Мультиагентная система расследования инцидентов на локальных LLM")
+  System(lab, "Production (лаборатория)", "api, worker, reporter, postgres, redis, nginx")
+  System(obs, "Observability", "Prometheus, Alertmanager, Loki, Grafana")
+  System(llmobs, "LLM Observability", "Arize Phoenix: трейсы и траектории агентов")
+  System(llmhost, "LLM Engine", "Ollama (MLX backend) на Apple Silicon")
+}
+System_Ext(cloud, "Cloud LLM API (опц.)", "Gemini / OpenRouter / DeepSeek — fallback L3")
+Rel(oncall, opscrew, "вопросы, инциденты, подтверждение действий", "Web UI / CLI / HTTP")
+Rel(obs, opscrew, "алерты", "Alertmanager webhook")
+Rel(opscrew, lab, "диагностика и одобренные действия", "MCP ops-tools")
+Rel(opscrew, obs, "метрики/логи/статусы", "PromQL / LogQL")
+Rel(opscrew, llmhost, "инференс", "HTTP /api/chat, /v1/systemone")
+Rel(opscrew, llmobs, "трейсы", "OTLP")
+Rel(opscrew, cloud, "fallback (выкл. по умолчанию)", "HTTPS")
+Rel(reviewer, llmobs, "траектории, evals")
+Rel(reviewer, obs, "дашборды, алерты агента")
+@enduml

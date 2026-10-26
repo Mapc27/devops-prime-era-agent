@@ -1,0 +1,39 @@
+@startuml arch-observability
+title Observability: что собираем, куда отправляем, где хранится
+left to right direction
+skinparam defaultFontSize 11
+rectangle "Agent runtime" as A {
+  [LangGraph + OpenInference] as OI
+  [prometheus_client\n/metrics] as PM
+  [JSON logs\n(trace_id)] as JL
+}
+rectangle "ops-tools (MCP)" as T {
+  [/metrics: calls, latency] as TM
+}
+rectangle "Lab" as L {
+  [api/worker /metrics,\nexporters, lab-control] as LM
+  [container stdout] as LL
+}
+rectangle "Evals" as E {
+  [offline evals\n(run_evals / continuous)] as EV
+  [online judge\n(sampled traces)] as OJ
+}
+database "Phoenix\n(traces, trajectories,\nsessions, annotations)\nvolume phoenixdata" as PH
+database "Prometheus TSDB\nretention 3d" as PR
+database "Loki\nretention 72h" as LO
+[Alertmanager] as AM
+[Grafana\nAgent / Lab dashboards] as GR
+OI --> PH : OTLP gRPC :4317
+PM --> PR : scrape 10s
+TM --> PR : scrape
+LM --> PR : scrape
+JL --> LO : Alloy (docker logs)
+LL --> LO : Alloy
+EV --> PM : POST /evals → opscrew_eval_score
+OJ --> PH : span annotations (judge)
+OJ --> PM : opscrew_online_judge_score
+PR --> AM : 12+ rules
+AM --> A : webhook /alert → расследование
+PR --> GR
+LO --> GR
+@enduml

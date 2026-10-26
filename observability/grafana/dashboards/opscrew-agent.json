@@ -1,0 +1,899 @@
+{
+ "uid": "opscrew-agent",
+ "title": "Ops Crew \u2014 Agent",
+ "schemaVersion": 39,
+ "refresh": "10s",
+ "time": {
+  "from": "now-1h",
+  "to": "now"
+ },
+ "tags": [
+  "opscrew"
+ ],
+ "panels": [
+  {
+   "id": 26,
+   "type": "row",
+   "title": "Product",
+   "gridPos": {
+    "w": 24,
+    "h": 1,
+    "x": 0,
+    "y": 0
+   },
+   "collapsed": false
+  },
+  {
+   "id": 1,
+   "type": "bargauge",
+   "title": "Runs by outcome (1h)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (outcome) (increase(opscrew_runs_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 8,
+    "h": 7,
+    "x": 0,
+    "y": 1
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 2,
+   "type": "piechart",
+   "title": "Runs by kind (1h)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (kind) (increase(opscrew_runs_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 8,
+    "y": 1
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 3,
+   "type": "timeseries",
+   "title": "Run duration p50/p95 by kind",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le,kind) (rate(opscrew_run_duration_seconds_bucket[15m])))",
+     "legendFormat": "p50 {{kind}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le,kind) (rate(opscrew_run_duration_seconds_bucket[15m])))",
+     "legendFormat": "p95 {{kind}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 10,
+    "h": 7,
+    "x": 14,
+    "y": 1
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 4,
+   "type": "bargauge",
+   "title": "HITL decisions",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (decision) (increase(opscrew_hitl_decisions_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 0,
+    "y": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 5,
+   "type": "bargauge",
+   "title": "Latest offline eval scores",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "opscrew_eval_score{metric=~\"product.*|agent.root_cause_accuracy|agent.fix_accuracy|llm.hallucination_resistance|agent.routing_accuracy\"}",
+     "legendFormat": "{{metric}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 18,
+    "h": 7,
+    "x": 6,
+    "y": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 6,
+   "type": "bargauge",
+   "title": "Online LLM-judge on production traces",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "opscrew_eval_score{metric=~\"online.judge_mean|online.judge_low_share\"}",
+     "legendFormat": "{{metric}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 12,
+    "h": 7,
+    "x": 0,
+    "y": 15
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 7,
+   "type": "stat",
+   "title": "Continuous evals: minutes since last run",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "(time() - opscrew_eval_score{metric=\"meta.last_run_unixtime\"}) / 60",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 12,
+    "y": 15
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 8,
+   "type": "stat",
+   "title": "Quality alerts firing",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "count(ALERTS{alertstate=\"firing\", alertname=~\"Eval.*|OnlineJudgeLow\"}) or vector(0)",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 18,
+    "y": 15
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 27,
+   "type": "row",
+   "title": "Agentic: routing, validation, tools, memory",
+   "gridPos": {
+    "w": 24,
+    "h": 1,
+    "x": 0,
+    "y": 22
+   },
+   "collapsed": false
+  },
+  {
+   "id": 9,
+   "type": "bargauge",
+   "title": "Router decisions (tier)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (tier, kind) (increase(opscrew_router_decisions_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 0,
+    "y": 23
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 10,
+   "type": "bargauge",
+   "title": "Validator verdicts",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (stage, verdict) (increase(opscrew_validator_verdicts_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 6,
+    "y": 23
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 11,
+   "type": "bargauge",
+   "title": "Guardrail blocks",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (reason) (increase(opscrew_guardrail_blocks_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 12,
+    "y": 23
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 12,
+   "type": "timeseries",
+   "title": "Tool steps per investigation (p50/p95)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le) (rate(opscrew_tool_steps_per_run_bucket[30m])))",
+     "legendFormat": "p50",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(opscrew_tool_steps_per_run_bucket[30m])))",
+     "legendFormat": "p95",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 18,
+    "y": 23
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 13,
+   "type": "bargauge",
+   "title": "Tool calls by status",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (tool, status) (increase(opscrew_tool_calls_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 8,
+    "h": 7,
+    "x": 0,
+    "y": 30
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 14,
+   "type": "timeseries",
+   "title": "MCP tool latency p95",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, tool) (rate(opstools_latency_seconds_bucket[15m])))",
+     "legendFormat": "{{tool}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 8,
+    "h": 7,
+    "x": 8,
+    "y": 30
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 15,
+   "type": "bargauge",
+   "title": "Memory ops",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (layer, op) (increase(opscrew_memory_ops_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 8,
+    "h": 7,
+    "x": 16,
+    "y": 30
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 16,
+   "type": "stat",
+   "title": "Memory items",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "opscrew_memory_items",
+     "legendFormat": "{{layer}} {{state}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 8,
+    "h": 7,
+    "x": 0,
+    "y": 37
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 28,
+   "type": "row",
+   "title": "LLM",
+   "gridPos": {
+    "w": 24,
+    "h": 1,
+    "x": 0,
+    "y": 44
+   },
+   "collapsed": false
+  },
+  {
+   "id": 17,
+   "type": "timeseries",
+   "title": "LLM latency p95 by role/model",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, role, model) (rate(opscrew_llm_latency_seconds_bucket[15m])))",
+     "legendFormat": "{{role}} / {{model}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 12,
+    "h": 7,
+    "x": 0,
+    "y": 45
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 18,
+   "type": "timeseries",
+   "title": "Jev-like decision latency p95",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, question) (rate(opscrew_decision_latency_seconds_bucket[15m])))",
+     "legendFormat": "{{question}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 12,
+    "h": 7,
+    "x": 12,
+    "y": 45
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 19,
+   "type": "timeseries",
+   "title": "Tokens/min by model",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (model, direction) (rate(opscrew_llm_tokens_total[5m])) * 60",
+     "legendFormat": "{{model}} {{direction}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 12,
+    "h": 7,
+    "x": 0,
+    "y": 52
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 20,
+   "type": "bargauge",
+   "title": "Equivalent cloud cost (USD, 24h)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (model) (increase(opscrew_llm_equiv_cost_usd_total[24h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 12,
+    "y": 52
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 21,
+   "type": "bargauge",
+   "title": "LLM errors / fallbacks",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (role, model, kind) (increase(opscrew_llm_errors_total[1h]))",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 6,
+    "h": 7,
+    "x": 18,
+    "y": 52
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 29,
+   "type": "row",
+   "title": "Infrastructure",
+   "gridPos": {
+    "w": 24,
+    "h": 1,
+    "x": 0,
+    "y": 59
+   },
+   "collapsed": false
+  },
+  {
+   "id": 22,
+   "type": "stat",
+   "title": "Ollama engine up",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "opscrew_llm_engine_up",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 4,
+    "h": 7,
+    "x": 0,
+    "y": 60
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 23,
+   "type": "bargauge",
+   "title": "Loaded models memory",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "opscrew_llm_loaded_model_bytes",
+     "legendFormat": "{{model}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 10,
+    "h": 7,
+    "x": 4,
+    "y": 60
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes"
+    },
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 24,
+   "type": "table",
+   "title": "Firing alerts",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "ALERTS{alertstate=\"firing\"}",
+     "legendFormat": null,
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 10,
+    "h": 7,
+    "x": 14,
+    "y": 60
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {}
+  },
+  {
+   "id": 25,
+   "type": "logs",
+   "title": "Agent logs (Loki)",
+   "description": "",
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "{service=\"agent\"}",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "gridPos": {
+    "w": 24,
+    "h": 10,
+    "x": 0,
+    "y": 67
+   },
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "sortOrder": "Descending"
+   }
+  }
+ ],
+ "templating": {
+  "list": []
+ }
+}

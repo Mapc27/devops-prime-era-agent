@@ -1,0 +1,19 @@
+@startuml seq-4-memory
+title Sequence 4 · Обновление знаний: темпоральная инвалидация факта
+autonumber
+actor Дежурный as U
+participant Triage as T
+participant "Fact extractor\n(L1, JSON schema)" as F
+participant "Semantic memory\n(L3)" as M
+participant "Jev-like (noul)" as J
+U -> T : "мы мигрировали с PG15 на PG17"
+T --> F : knowledge_update
+F -> M : add_fact("main database runs PostgreSQL 17 (migrated from 15)")
+M -> M : embed; active facts with cos ≥ 0.55 or same subject
+M -> J : does new_fact make old_fact outdated?
+J --> M : 0.88
+M -> M : old.valid_to = now, old.superseded_by = new\nnew.valid_from = now
+M --> U : Запомнил … ↳ устаревший факт закрыт
+U -> T : "какая у нас версия Postgres?"
+T -> M : search_facts(as_of=now) → только PG17
+@enduml

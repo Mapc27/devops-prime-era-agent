@@ -1,0 +1,22 @@
+@startuml seq-3-hitl-reject
+title Sequence 3 · Human-in-the-loop: отказ и защита от прямого вызова
+autonumber
+actor Дежурный as U
+participant "Graph\n(checkpointer)" as G
+participant "Human gate" as H
+participant "ops-tools" as M
+participant Scribe as SC
+G -> H : remediation approved by validator
+H -> G : interrupt(approval_request)
+G -> G : state saved (SQLite checkpoint), run paused
+U -> G : POST /runs/{id}/approve {decision: reject}
+G -> H : Command(resume=reject)
+H --> SC : rejected → postmortem (outcome=rejected)
+note over M
+  Даже если LLM попытается вызвать
+  apply_remediation напрямую:
+  у Investigator нет write-tool,
+  а без HMAC approval token
+  сервер вернёт DENIED.
+end note
+@enduml

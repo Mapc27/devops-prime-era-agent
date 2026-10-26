@@ -1,0 +1,21 @@
+@startuml seq-5-routing
+title Sequence 5 · Роутинг на модели и fallback
+autonumber
+participant Triage as T
+participant "Model router" as R
+participant "L1 granite4.2:8b (IBM)" as L1
+participant "L2 ornith:9b (Qwen3.5-based)" as L2
+participant "V gemma4:12b (Google)" as V
+participant "L3 cloud (opt.)" as C
+T -> R : kind=incident, complexity=complex, conf=0.93
+R -> L2 : heavy tier
+alt L2 unavailable / timeout
+  R -> L1 : fallback
+  alt L1 fails
+    R -> C : fallback (если ключ задан)
+  end
+end
+T -> R : kind=question, conf=0.41 (< 0.6)
+R -> L2 : cascade: low confidence → escalate tier
+R -> V : validation always on a different family\n(startup check: family(V) ∉ families(workers))
+@enduml

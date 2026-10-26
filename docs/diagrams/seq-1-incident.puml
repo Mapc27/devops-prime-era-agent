@@ -1,0 +1,40 @@
+@startuml seq-1-incident
+title Sequence 1 · Инцидент: happy path (validator approve → HITL approve → recovery)
+autonumber
+actor "Дежурный" as U
+participant "API / UI" as API
+participant "Triage\n(tev1, Jev-like)" as T
+participant "Knowledge\n(memory)" as K
+participant "Supervisor\n(L1/L2)" as S
+participant "Investigator\n(L1/L2 + tools)" as I
+participant "ops-tools\n(MCP)" as M
+participant "Validator\n(gemma4, Google)" as V
+participant "Remediator" as R
+participant "Human gate" as H
+participant "Scribe" as SC
+U -> API : "cart returns 500"
+API -> T : systemone(kind, severity, complexity, skill)
+T --> API : incident / 1.95 / simple / triage-http-5xx (≈0.3 s)
+API -> K : search episodes + facts
+K --> S : memory context
+S -> S : plan (structured JSON)
+S -> I : plan + skill
+loop ≤ max_tool_steps
+  I -> M : list_services / query_logs / query_metrics / run_diagnostic
+  M --> I : <untrusted_tool_output> → E1..En
+end
+I --> S : FINDINGS
+S -> V : diagnosis {root_cause, evidence_ids, confidence}
+V -> V : 1) ids exist  2) Jev noul P(supported)  3) LLM verdict
+V --> R : approve
+R -> V : remediation {action, rollback_plan}
+V -> V : policy + Jev noul P(fit) + LLM verdict
+V --> H : approve
+H -> U : approval request (interrupt)
+U -> H : approve
+H -> M : apply_remediation(action, HMAC token)
+M --> H : status=200
+H -> M : verify: list_services, 5xx, p95, disk, pg_conn
+SC -> SC : postmortem → episodic memory
+API --> U : диагноз + доказательства + действие + ✅
+@enduml

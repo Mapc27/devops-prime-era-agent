@@ -1,0 +1,17 @@
+@startuml c4-2-context
+!include <C4/C4_Context>
+title C4 L1 · System Context — Ops Crew
+Person(oncall, "Дежурный инженер", "задаёт вопросы, подтверждает изменения")
+System(opscrew, "Ops Crew", "Triage → Supervisor/Investigator → Validator → Remediator → Human gate → Scribe")
+System_Ext(am, "Alertmanager", "присылает firing-алерты")
+System_Ext(lab, "Production (лаборатория)", "сервисы под наблюдением")
+System_Ext(prom, "Prometheus + Loki", "метрики и логи")
+System_Ext(ollama, "Ollama", "локальные LLM: tev1 (Jev-like), granite, qwen, gemma, embeddings")
+System_Ext(phoenix, "Phoenix", "LLM-трейсы")
+Rel(oncall, opscrew, "чат / approve / reject")
+Rel(am, opscrew, "webhook /alert")
+Rel(opscrew, prom, "query_metrics / query_logs")
+Rel(opscrew, lab, "status, read-only диагностика, одобренные действия")
+Rel(opscrew, ollama, "chat / structured output / decisions / embed")
+Rel(opscrew, phoenix, "OTLP spans")
+@enduml

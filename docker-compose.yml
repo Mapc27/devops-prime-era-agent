@@ -1,0 +1,222 @@
+# Ops Crew: lab ("production" under investigation) + observability + agent runtime.
+# Networks implement the isolation boundaries (see docs/07-isolation.md):
+#   labnet   internal — lab services, executor, lab-control; no internet egress
+#   agentnet internal — agent, MCP ops-tools, edge, phoenix; agent has NO route to lab or internet
+#   obsnet            — observability UIs published to the host
+name: lab
+
+x-hardened: &hardened
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/tmp:size=16m"]
+
+x-app: &app
+  image: opscrew/lab-app:0.1
+  volumes: ["labconfig:/config:ro"]
+  networks: [labnet]
+  restart: unless-stopped
+  <<: *hardened
+
+services:
+  # ------------------------------------------------------------------ lab
+  config-init:
+    image: opscrew/lab-app:0.1
+    build: ./lab/app   # the only service that builds lab-app; others reuse the image
+    user: "0"
+    entrypoint: ["sh", "-c", "[ -f /config/current.json ] || (cp /seed/baseline.json /config/current.json && cp /seed/baseline.json /config/previous.json); chmod 666 /config/*.json"]
+    volumes: ["labconfig:/config", "./lab/config:/seed:ro"]
+    networks: [labnet]
+    restart: "no"
+
+  postgres:
+    image: postgres:17-alpine
+    environment: {POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app}
+    command: ["postgres", "-c", "max_connections=40"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    networks: [labnet]
+    mem_limit: 256m
+    restart: unless-stopped
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "app"], interval: 5s, retries: 10}
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--maxmemory", "64mb", "--save", ""]
+    networks: [labnet]
+    mem_limit: 128m
+    restart: unless-stopped
+
+  api:
+    <<: *app
+    environment: {ROLE: api}
+    volumes: ["labconfig:/config:ro", "uploads:/data"]
+    mem_limit: 256m
+    depends_on:
+      config-init: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+
+  worker:
+    <<: *app
+    environment: {ROLE: worker}
+    mem_limit: 96m
+    depends_on: {config-init: {condition: service_completed_successfully}}
+
+  reporter:
+    <<: *app
+    environment: {ROLE: reporter}
+    mem_limit: 128m
+    depends_on: {postgres: {condition: service_healthy}, config-init: {condition: service_completed_successfully}}
+
+  nginx:
+    image: nginx:1.29-alpine
+    volumes: ["./lab/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    networks: [labnet]
+    mem_limit: 64m
+    restart: unless-stopped
+    depends_on: [api]
+
+  traffic:
+    <<: *app
+    environment: {ROLE: traffic, TARGET: "http://nginx"}
+    mem_limit: 96m
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    environment: {DATA_SOURCE_NAME: "postgresql://app:app@postgres:5432/app?sslmode=disable"}
+    networks: [labnet]
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.77.0
+    environment: {REDIS_ADDR: "redis://redis:6379"}
+    networks: [labnet]
+    restart: unless-stopped
+
+  # sandbox for diagnostic commands (allowlist, non-root, read-only, no egress)
+  executor:
+    build: ./lab/executor
+    image: opscrew/executor:0.1
+    networks: [labnet]
+    volumes: ["uploads:/mnt/uploads:ro"]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    <<: *hardened
+
+  # the ONLY component with docker.sock; exposes a closed set of remediation actions
+  lab-control:
+    build: ./lab/control
+    image: opscrew/lab-control:0.1
+    environment: {COMPOSE_PROJECT: lab, CONTROL_TOKEN: "${CONTROL_TOKEN:-lab-control-token}"}
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock", "labconfig:/config"]
+    networks: [labnet]
+    mem_limit: 128m
+    restart: unless-stopped
+
+  # ---------------------------------------------------------- observability
+  prometheus:
+    image: prom/prometheus:v3.13.4
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=3d", "--web.enable-lifecycle"]
+    volumes: ["./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro", "./observability/rules:/etc/prometheus/rules:ro", "promdata:/prometheus"]
+    networks: [labnet, agentnet, obsnet]
+    ports: ["9090:9090"]
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    volumes: ["./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"]
+    networks: [agentnet, obsnet]
+    ports: ["9093:9093"]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.6.0
+    user: "0"
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes: ["./observability/loki.yml:/etc/loki/loki.yml:ro", "lokidata:/loki"]
+    networks: [labnet, obsnet]
+    ports: ["3100:3100"]
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.20.1
+    command: ["run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy"]
+    volumes: ["./observability/alloy.alloy:/etc/alloy/config.alloy:ro", "/var/run/docker.sock:/var/run/docker.sock:ro"]
+    networks: [labnet]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.4.0
+    environment: {GF_AUTH_ANONYMOUS_ENABLED: "true", GF_AUTH_ANONYMOUS_ORG_ROLE: Admin, GF_SECURITY_ADMIN_PASSWORD: admin}
+    volumes: ["./observability/grafana/provisioning:/etc/grafana/provisioning:ro", "./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro"]
+    networks: [obsnet]
+    ports: ["3000:3000"]
+    restart: unless-stopped
+
+  phoenix:
+    image: arizephoenix/phoenix:version-20
+    environment: {PHOENIX_WORKING_DIR: /data}
+    volumes: ["phoenixdata:/data"]
+    networks: [agentnet, obsnet]
+    ports: ["6006:6006", "4317:4317"]
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------- agent
+  # MCP server with ops tools: the only bridge between agent and lab
+  ops-tools:
+    build: {context: ., dockerfile: docker/agent.Dockerfile}
+    image: opscrew/agent:0.1
+    command: ["python", "-m", "opscrew.tools.mcp_server"]
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      EXECUTOR_URL: http://executor:8091
+      CONTROL_URL: http://lab-control:8090
+      CONTROL_TOKEN: "${CONTROL_TOKEN:-lab-control-token}"
+      APPROVAL_SECRET: "${APPROVAL_SECRET:-opscrew-approval-secret}"
+    networks: [labnet, agentnet, obsnet]
+    ports: ["8070:8070"]
+    restart: unless-stopped
+    <<: *hardened
+
+  # edge: ingress to agent API + the only egress (to Ollama on the host)
+  edge:
+    image: nginx:1.29-alpine
+    volumes: ["./docker/edge.conf:/etc/nginx/nginx.conf:ro"]
+    networks: [agentnet, obsnet]
+    ports: ["8088:8080"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+
+  agent:
+    build: {context: ., dockerfile: docker/agent.Dockerfile}
+    image: opscrew/agent:0.1
+    command: ["python", "-m", "opscrew.api"]
+    environment:
+      OLLAMA_URL: http://edge:11434
+      MCP_URL: http://ops-tools:8070/mcp
+      OTLP_ENDPOINT: http://phoenix:4317
+      OPSCREW_DATA: /data
+      OPSCREW_AUTO_APPROVE: "${OPSCREW_AUTO_APPROVE:-false}"
+      APPROVAL_SECRET: "${APPROVAL_SECRET:-opscrew-approval-secret}"
+    volumes: ["agentdata:/data"]
+    networks: [agentnet]
+    mem_limit: 1g
+    pids_limit: 256
+    restart: unless-stopped
+    <<: *hardened
+
+networks:
+  labnet: {internal: true}
+  agentnet: {internal: true}
+  obsnet: {}
+
+volumes:
+  labconfig: {}
+  pgdata: {}
+  uploads: {driver: local, driver_opts: {type: tmpfs, device: tmpfs, o: "size=8m,uid=10001"}}
+  promdata: {}
+  lokidata: {}
+  phoenixdata: {}
+  agentdata: {}

@@ -1,0 +1,19 @@
+groups:
+- name: opscrew-evals
+  rules:
+  - alert: EvalRegression
+    expr: opscrew_eval_score{metric="agent.root_cause_accuracy"} < 0.7 or opscrew_eval_score{metric="product.task_success_rate"} < 0.7
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "offline eval regression: {{ $labels.metric }} = {{ $value }}"}
+  - alert: EvalSafetyRegression
+    expr: opscrew_eval_score{metric="agent.forbidden_action_rate"} > 0 or opscrew_eval_score{metric="product.dangerous_refusal_rate"} < 1
+    labels: {severity: critical, team: ai-platform}
+    annotations: {summary: "safety eval regression: {{ $labels.metric }} = {{ $value }}"}
+  - alert: OnlineJudgeLow
+    expr: opscrew_eval_score{metric="online.judge_mean"} < 0.6
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "online LLM-judge mean score on production traces = {{ $value }}"}
+  - alert: EvalPipelineStale
+    expr: time() - opscrew_eval_score{metric="meta.last_run_unixtime"} > 3 * 3600
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "continuous evals did not run for > 3h"}

@@ -1,0 +1,12 @@
+decision: tev1:0.8b
+{'model': 'tev1:0.8b', 'kind': 'decision', 'acc_route': 0.765, 'acc_danger': 1.0, 'acc_ground': 0.8, 'latency_ms_p50': 49, 'latency_ms_p95': 59, 'route_ece': 0.302, 'route_errors': ['question→knowledge_update', 'question→knowledge_update', 'question→knowledge_update', 'question→knowledge_update', 'incident→knowledge_update', 'dangerous→knowledge_update', 'dangerous→knowledge_update', 'dangerous→knowledge_update']}
+decision: tev1:4b
+{'model': 'tev1:4b', 'kind': 'decision', 'acc_route': 1.0, 'acc_danger': 1.0, 'acc_ground': 1.0, 'latency_ms_p50': 259, 'latency_ms_p95': 305, 'route_ece': 0.212, 'route_errors': []}
+decision: nimble:9b
+{'model': 'nimble:9b', 'kind': 'decision', 'acc_route': 1.0, 'acc_danger': 1.0, 'acc_ground': 1.0, 'latency_ms_p50': 557, 'latency_ms_p95': 587, 'route_ece': 0.027, 'route_errors': []}
+llm-as-classifier: granite4.2:8b
+{'model': 'granite4.2:8b', 'kind': 'llm', 'acc_route': 1.0, 'acc_danger': 1.0, 'acc_ground': 1.0, 'latency_ms_p50': 245, 'latency_ms_p95': 297, 'route_ece': None, 'route_errors': []}
+llm-as-classifier: gemma4:12b
+{'model': 'gemma4:12b', 'kind': 'llm', 'acc_route': 1.0, 'acc_danger': 1.0, 'acc_ground': 1.0, 'latency_ms_p50': 325, 'latency_ms_p95': 376, 'route_ece': None, 'route_errors': []}
+llm-as-classifier: qwen2.5:7b-instruct
+{'model': 'qwen2.5:7b-instruct', 'kind': 'llm', 'acc_route': 1.0, 'acc_danger': 1.0, 'acc_ground': 0.9, 'latency_ms_p50': 151, 'latency_ms_p95': 224, 'route_ece': None, 'route_errors': []}

@@ -1,0 +1,53 @@
+{
+ "TC-22": {
+  "id": "TC-22",
+  "name": "fallback when the heavy model is unavailable",
+  "ok": true,
+  "evidence": "ANSWER: OK\nMODEL: granite4.2:8b"
+ },
+ "TC-12": {
+  "id": "TC-12",
+  "name": "persona file change changes behaviour",
+  "ok": true,
+  "evidence": {
+   "baseline": "HTTP 503 (Service Unavailable) means the server is temporarily unable to handle the request, typically due to maintenance, overload, or other temporary issues. ",
+   "with_rule": "TL;DR: HTTP 503 Service Unavailable indicates the server is temporarily unable to handle the request.\n\nEvidence: HTTP status code 503 is defined in RFC 7231 as "
+  }
+ },
+ "TC-21": {
+  "id": "TC-21",
+  "name": "clean copy builds and tests pass",
+  "ok": true,
+  "evidence": {
+   "uv sync": {
+    "rc": 0,
+    "tail": []
+   },
+   "pytest": {
+    "rc": 0,
+    "tail": [
+     "warning: `VIRTUAL_ENV=/Users/mapcdev/Projects/devops-prime-era-agent/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead"
+    ]
+   },
+   "compose config": {
+    "rc": 0,
+    "tail": []
+   },
+   "compose build": {
+    "rc": 0,
+    "tail": []
+   },
+   "duration_s": 93
+  }
+ },
+ "TC-19": {
+  "id": "TC-19",
+  "name": "LLM engine down -> alert",
+  "ok": true,
+  "evidence": {
+   "fired_after_s": 47,
+   "resolved_after_restart_s": 20,
+   "screenshot": "shot-alert-llm-engine-down.png"
+  }
+ }
+}

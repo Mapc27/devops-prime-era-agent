@@ -1,0 +1,30 @@
+@startuml c4-7-deployment
+!include <C4/C4_Deployment>
+title C4 Deployment · MVP (MacBook) и целевое production-развёртывание
+Deployment_Node(mac, "MacBook Pro M4 Pro, 24 GB", "macOS 26") {
+  Deployment_Node(ol, "Ollama 0.40 (host process, Metal GPU)", "brew services") {
+    Container(models, "LLM models", "MLX/GGUF", "~16 GB рабочий набор")
+  }
+  Deployment_Node(dd, "Docker Desktop VM (Apple Virtualization.framework)", "LinuxKit, 8 GB") {
+    Deployment_Node(cmp, "docker compose project 'lab'", "3 сети: agentnet/labnet internal, obsnet") {
+      Container(ag, "agent + ops-tools + edge", "hardened containers")
+      Container(lb, "lab services + executor + lab-control", "")
+      Container(ob, "prometheus, alertmanager, loki, alloy, grafana, phoenix", "")
+    }
+  }
+}
+Deployment_Node(k8s, "Target: Kubernetes cluster (production)", "") {
+  Deployment_Node(gpu, "GPU node pool", "vLLM / SGLang") {
+    Container(vllm, "Model serving", "OpenAI-compatible", "router → LiteLLM")
+  }
+  Deployment_Node(sbx, "Agent Sandbox (kubernetes-sigs/agent-sandbox)", "RuntimeClass: gVisor / Kata") {
+    Container(ag2, "agent pods", "NetworkPolicy egress allowlist")
+    Container(ex2, "ephemeral executor pods", "per-run sandbox, warm pool")
+  }
+  Deployment_Node(obs2, "Observability", "") {
+    Container(o2, "Phoenix/Langfuse + Prometheus/Grafana/Loki", "")
+  }
+}
+Rel(ag, models, "HTTP via edge")
+Rel(ag2, vllm, "HTTP")
+@enduml

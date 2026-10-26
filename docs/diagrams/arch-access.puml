@@ -1,0 +1,21 @@
+@startuml arch-access
+title Матрица доступа: кто к чему может обращаться
+skinparam defaultFontSize 11
+actor "Дежурный" as U
+rectangle "LLM-агенты\n(Triage, Supervisor,\nInvestigator, Validator,\nRemediator, Scribe)" as AG
+rectangle "Узел execute\n(код, не LLM)" as EX
+rectangle "ops-tools MCP" as MCP
+rectangle "executor\n(sandbox)" as SB
+rectangle "lab-control\n(docker.sock)" as LC
+database "Prometheus / Loki" as PL
+rectangle "Lab services" as LAB
+AG --> MCP : read tools: golden_signals, query_metrics,\nquery_logs, list/inspect_service,\nrun_diagnostic, list_alerts
+AG -[#red,dashed]-> MCP : apply_remediation — НЕ привязан к LLM
+U --> EX : approve (HITL)
+EX --> MCP : apply_remediation(action, HMAC token)
+MCP --> PL : PromQL / LogQL (read)
+MCP --> SB : POST /exec (allowlist)
+MCP --> LC : status (read) /\n4 действия (+ control token)
+SB --> LAB : read-only команды
+LC --> LAB : restart / rollback /\ncleanup / terminate_idle
+@enduml

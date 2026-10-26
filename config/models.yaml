@@ -1,0 +1,36 @@
+# Model routing table (config "A", chosen by bench + system-level A/B — docs/03-models-benchmark.md).
+# family is used for the cross-family validation rule (validator family must differ from workers).
+engine:
+  kind: ollama
+  num_ctx: 12288
+  keep_alive: 30m
+
+roles:
+  router:      {model: "tev1:4b",        family: qwen,   kind: decision, tier: L0}   # Jev-like, Qwen3.5 fine-tune
+  light:       {model: "granite4.2:8b",  family: ibm,    kind: chat,     tier: L1}
+  heavy:       {model: "ornith:9b",      family: qwen,   kind: chat,     tier: L2}   # Qwen3.5-based, Q4_K_M
+  validator:   {model: "gemma4:12b",     family: google, kind: chat,     tier: V}
+  embed:       {model: "embeddinggemma-2", family: google, kind: embed}
+  # optional cloud tier (L3) — disabled by default, OpenAI-compatible endpoint
+  cloud:       {model: "gemini-flash-latest", family: google, kind: chat, tier: L3, enabled: false,
+                base_url: "https://generativelanguage.googleapis.com/v1beta/openai/", api_key_env: GEMINI_API_KEY}
+
+workers: [light, heavy]
+
+routing:
+  simple: light
+  complex: heavy
+  confidence_threshold: 0.6       # cascade: low router confidence -> escalate one tier
+  fallback: {heavy: [light, cloud], light: [heavy, cloud], validator: [light]}
+
+# "equivalent API price" (USD per 1M tokens in/out) — what the same traffic would cost on a comparable API
+pricing:
+  "tev1:4b": [0.042, 0.0]
+  "granite4.2:8b": [0.05, 0.10]
+  "ornith:9b": [0.05, 0.10]
+  "gemma4:12b": [0.10, 0.30]
+  "gemini-flash-latest": [0.30, 2.50]
+
+# Alternatives evaluated:
+#  B: light=ornith:9b, heavy=gemma4:26b (MoE nvfp4), validator=granite4.2:8b  — same resolution, p95 latency 3x worse (18 GB swaps)
+#  C (for >=36 GB Macs): light=granite4.2:8b, heavy=gemma4:26b, validator=ornith:9b — three families

@@ -1,0 +1,47 @@
+@startuml c4-4-component
+!include <C4/C4_Component>
+LAYOUT_TOP_DOWN()
+title C4 L3 · Component — Agent runtime (слои агента)
+Container_Boundary(agent, "Agent runtime") {
+  Boundary(l1, "Interface layer") {
+    Component(api, "HTTP API / Web UI / CLI", "FastAPI, Typer", "/chat, /runs/{id}/approve, /alert, /metrics")
+  }
+  Boundary(l2, "Orchestration layer") {
+    Component(graph, "Ops graph", "LangGraph StateGraph", "маршруты, revise-циклы, interrupt() для HITL, checkpointer")
+  }
+  Boundary(l3, "Agents layer") {
+    Component(triage, "Triage", "Jev-like decision", "kind / severity / complexity / skill")
+    Component(know, "Knowledge", "memory retrieval", "похожие инциденты + актуальные факты")
+    Component(sup, "Supervisor", "L1/L2 LLM", "план + диагноз с evidence ids")
+    Component(inv, "Investigator", "ReAct, read-only tools", "сбор доказательств")
+    Component(rem, "Remediator", "L1/L2 LLM", "действие из каталога + rollback plan")
+    Component(scr, "Scribe", "L1 LLM", "постмортем, эпизод в память")
+  }
+  Boundary(l4, "Verification layer") {
+    Component(guard, "Guardrails", "regex/policy", "деструктивные запросы, injection, каталог действий")
+    Component(val, "Validator", "LLM другого семейства + Jev-like noul", "grounding, safety, fit → approve/revise/escalate")
+    Component(hitl, "Human gate", "interrupt + HMAC approval token", "подтверждение изменений")
+  }
+  Boundary(l5, "Capabilities layer") {
+    Component(router, "Model router", "LangChain ChatOllama + fallbacks", "L0/L1/L2/V/L3, cross-family check")
+    Component(mem, "Memory", "SQLite + embeddings", "L1 checkpoints, L2 episodic hybrid, L3 temporal facts")
+    Component(tools, "MCP client", "langchain-mcp-adapters", "read tools ⊂ investigator, write tool ⊂ execute")
+    Component(kb, "Persona & skills", "SOUL/AGENTS/GUARDRAILS/INFRA/TOOLS/USER.md, skills/*/SKILL.md", "progressive disclosure")
+  }
+  Component(obs, "Observability", "OTel + OpenInference, prometheus_client, JSON logs", "трейсы, метрики, логи")
+}
+Rel(api, graph, "invoke / resume")
+Rel(graph, triage, "")
+Rel(graph, sup, "")
+Rel(sup, inv, "plan")
+Rel(inv, tools, "MCP calls")
+Rel(sup, val, "diagnosis")
+Rel(rem, val, "remediation")
+Rel(val, hitl, "approve")
+Rel(triage, router, "")
+Rel(val, router, "family ≠ workers")
+Rel(know, mem, "")
+Rel(scr, mem, "")
+Rel(sup, kb, "")
+Rel(guard, val, "pre-checks")
+@enduml

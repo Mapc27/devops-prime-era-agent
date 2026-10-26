@@ -1,0 +1,23 @@
+@startuml seq-2-revise
+title Sequence 2 · Валидатор возвращает диагноз на доработку (revise → escalate)
+autonumber
+participant Supervisor as S
+participant Investigator as I
+participant "Validator\n(other family)" as V
+participant "Jev-like\n(noul)" as J
+participant Responder as RS
+S -> V : diagnosis (cites E2, E9)
+V -> V : E9 does not exist → issue
+V -> J : P(claim supported | E2)
+J --> V : 0.12
+V --> S : revise [issues]
+S -> I : investigate again + validator feedback
+I --> S : new evidence E5..E7
+S -> V : diagnosis v2
+alt grounded
+  V --> S : approve → remediation
+else still unsupported and revisions = max
+  V --> RS : escalate
+  RS --> RS : "⚠️ нужна помощь человека" + промежуточные находки
+end
+@enduml

@@ -1,0 +1,39 @@
+@startuml arch-memory
+title Память Ops Crew: 3 слоя + procedural, поток записи и актуализации
+skinparam componentStyle rectangle
+skinparam defaultFontSize 11
+package "L1 Working (short-term)" #E8F0FE {
+  [LangGraph state\n(OpsState: evidence, plan, diagnosis…)] as ST
+  database "checkpoints.sqlite\n(AsyncSqliteSaver)" as CK
+}
+package "L2 Episodic" #E6F4EA {
+  database "episodes\n(symptoms, root cause, fix,\noutcome, skill, steps, emb)" as EP
+  [Hybrid retriever\n0.55·cos + 0.30·BM25 + 0.15·recency\n× outcome weight] as HR
+}
+package "L3 Semantic (long-term)" #FEF7E0 {
+  database "facts\nvalid_from / valid_to /\nrecorded_at / superseded_by" as FA
+  [Dedup: cos ≥ 0.95\n+ same numbers/tokens] as DD
+  [Contradiction check\nJev-like noul ≥ 0.5] as CC
+}
+package "L0 Procedural" #F3E8FD {
+  [skills/*/SKILL.md\npersona/*.md (git)] as SK
+}
+[Triage] --> ST
+ST --> CK : каждый узел графа\n(interrupt / resume)
+[Scribe] --> EP : постмортем после инцидента
+[Fact extractor (L1 LLM)] --> DD : «мы перешли на PG17»
+DD --> CC : не дубликат
+CC --> FA : старый факт: valid_to = now\nновый: valid_from = now
+[Knowledge agent] --> HR : похожие инциденты
+HR --> EP
+[Knowledge agent] --> FA : только активные as_of(now)
+[Knowledge agent] --> SK : skill по описанию
+note bottom of EP
+  актуальность: полураспад recency 30 дней,
+  TTL 180 дней для неиспользуемых, счётчик uses
+end note
+note bottom of FA
+  история не теряется: можно спросить
+  «что мы знали на момент инцидента» (as_of)
+end note
+@enduml

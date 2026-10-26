@@ -1,0 +1,26 @@
+@startuml arch-isolation
+title Изоляция: эшелонированная защита (от внешнего слоя к внутреннему)
+skinparam defaultFontSize 11
+rectangle "macOS host  —  Ollama (Metal GPU), браузер пользователя" #FFFFFF {
+  rectangle "1. Docker Desktop VM (Apple Virtualization.framework) — отдельное ядро Linux" #F1F3F4 {
+    rectangle "2. Сети: agentnet / labnet  internal: true  (нет маршрута в интернет)" #E8F0FE {
+      rectangle "3. Контейнер агента: read-only rootfs, cap_drop ALL,\nno-new-privileges, non-root, pids/mem limits, без docker.sock" #E6F4EA {
+        rectangle "4. Только MCP ops-tools: нет credentials к Docker/Prometheus" #FEF7E0 {
+          rectangle "5. Executor: allowlist бинарей, без shell, read-only SQL,\ncurl только к лабе, таймауты" #FCE8E6 {
+            rectangle "6. Каталог из 4 действий (lab-control),\npostgres рестартовать нельзя" #F3E8FD {
+              rectangle "7. HMAC approval token\nпосле validator approve + human approve" #FFFFFF {
+                rectangle "8. Guardrails + Validator другого семейства + HITL" #E8F0FE
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+note right
+  Egress агента: только edge:11434 → Ollama на хосте
+  Проверено: из контейнера агента недоступны
+  интернет и сервисы лабы (только edge и ops-tools)
+end note
+@enduml

@@ -1,0 +1,19 @@
+route:
+  receiver: log
+  group_by: [alertname, service]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+  routes:
+    - matchers: [target="opscrew"]
+      receiver: opscrew
+      continue: true
+receivers:
+  - name: log
+    webhook_configs:
+      - url: http://agent:8080/alerts/sink
+        send_resolved: true
+  - name: opscrew
+    webhook_configs:
+      - url: http://agent:8080/alert
+        send_resolved: false

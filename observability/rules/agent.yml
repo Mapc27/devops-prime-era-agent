@@ -1,0 +1,30 @@
+groups:
+- name: opscrew-agent
+  rules:
+  - alert: LLMEngineDown
+    expr: opscrew_llm_engine_up == 0
+    for: 30s
+    labels: {severity: critical, team: ai-platform}
+    annotations: {summary: "Ollama engine unreachable from agent"}
+  - alert: AgentHighLLMLatency
+    expr: histogram_quantile(0.95, sum by (le, role) (rate(opscrew_llm_latency_seconds_bucket[5m]))) > 60
+    for: 1m
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "p95 LLM latency for role {{ $labels.role }} > 60s"}
+  - alert: ValidatorRejectSpike
+    expr: sum(increase(opscrew_validator_verdicts_total{verdict!="approve"}[15m])) / clamp_min(sum(increase(opscrew_validator_verdicts_total[15m])), 1) > 0.6
+    for: 1m
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "validator rejects >60% of decisions — worker quality degraded"}
+  - alert: GuardrailBlockedAction
+    expr: increase(opscrew_guardrail_blocks_total[5m]) > 0
+    labels: {severity: info, team: ai-platform}
+    annotations: {summary: "guardrail blocked {{ $value }} action(s): {{ $labels.reason }}"}
+  - alert: AgentErrors
+    expr: increase(opscrew_runs_total{outcome="error"}[10m]) > 2
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "agent runs failing"}
+  - alert: AgentStuckLoop
+    expr: increase(opscrew_runs_total{outcome="budget_exhausted"}[30m]) > 1
+    labels: {severity: warning, team: ai-platform}
+    annotations: {summary: "agent exhausted step budget — possible loop"}

@@ -1,0 +1,45 @@
+@startuml c4-3-container
+!include <C4/C4_Container>
+LAYOUT_TOP_DOWN()
+title C4 L2 · Container — границы изоляции (docker networks)
+Person(oncall, "Дежурный инженер")
+System_Boundary(host, "MacBook M4 Pro (macOS)") {
+  Container(ollama, "Ollama", "Go + MLX, Metal GPU", "tev1:4b, granite4.2:8b, ornith:9b, gemma4:12b, embeddinggemma-2")
+  System_Boundary(vm, "Docker Desktop LinuxKit VM") {
+    Boundary(agentnet, "agentnet (internal, без интернета)") {
+      Container(agent, "Agent runtime", "Python 3.12, LangGraph, FastAPI", "граф агентов, роутер моделей, память, HITL; read-only rootfs, cap_drop ALL, non-root")
+      ContainerDb(agentdb, "Agent memory", "SQLite volume", "checkpoints (L1), episodes (L2), temporal facts (L3), trajectories")
+      Container(mcp, "ops-tools", "MCP server (FastMCP, streamable HTTP)", "единственный мост к лабе; approval-token для изменений")
+      Container(edge, "edge", "nginx", "ingress :8088 → agent; egress только → Ollama")
+    }
+    Boundary(labnet, "labnet (internal)") {
+      Container(app, "api / worker / reporter / nginx", "Python, nginx", "сервисы production")
+      ContainerDb(pg, "postgres / redis", "", "stateful + кэш")
+      Container(exec, "executor (sandbox)", "Python, allowlist", "read-only диагностика; non-root, ro-rootfs, no egress, pids/mem limits")
+      Container(ctl, "lab-control", "Python + Docker API", "закрытый каталог действий (restart, rollback, cleanup, terminate_idle)")
+    }
+    Boundary(obsnet, "obsnet") {
+      Container(prom, "Prometheus + Alertmanager", "", "метрики, 16 правил алертов")
+      Container(loki, "Loki + Alloy", "", "логи всех контейнеров")
+      Container(graf, "Grafana", "", "дашборды Agent / Lab")
+      Container(phx, "Arize Phoenix", "OTLP", "трейсы, траектории, сессии")
+    }
+  }
+}
+Rel(oncall, edge, "HTTP :8088")
+Rel(edge, agent, "HTTP")
+Rel(agent, edge, "LLM calls")
+Rel(edge, ollama, "host.docker.internal:11434")
+Rel(agent, mcp, "MCP (streamable HTTP)")
+Rel(agent, agentdb, "SQLite")
+Rel(agent, phx, "OTLP gRPC")
+Rel(mcp, prom, "PromQL")
+Rel(mcp, loki, "LogQL")
+Rel(mcp, exec, "POST /exec")
+Rel(mcp, ctl, "status / actions + token")
+Rel(ctl, app, "Docker API")
+Rel(prom, agent, "scrape /metrics, webhook /alert")
+Rel(prom, app, "scrape")
+Rel(graf, prom, "")
+Rel(graf, loki, "")
+@enduml

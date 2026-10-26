@@ -1,0 +1,26 @@
+@startuml arch-evals
+title Цикл оценки качества: offline → continuous → online → алерт → регресс
+skinparam defaultFontSize 11
+start
+:Изменение (модель / промпт / граф);
+:bench/ — LLM-уровень\n(9 агентных свойств, Jev-like, движки);
+:evals/run_evals.py — полный набор 33 кейса\nна лаборатории с ground truth;
+if (метрики ≥ целей?) then (да)
+  :релиз конфигурации (config/models.yaml);
+else (нет)
+  :разбор траекторий в Phoenix\n→ фикс → повторный прогон;
+  stop
+endif
+fork
+  :continuous evals (evals/continuous.py)\nкороткий набор каждые N минут;
+  :POST /evals → opscrew_eval_score;
+fork again
+  :online judge: выборка свежих трейсов\nLLM-судья другого семейства;
+  :аннотации в Phoenix + opscrew_online_judge_score;
+fork again
+  :онлайн-сигналы: validator verdicts,\nHITL reject, escalations, guardrail blocks;
+end fork
+:Prometheus rules: EvalRegression,\nOnlineJudgeLow, ValidatorRejectSpike;
+:Alertmanager → команда AI-platform;
+stop
+@enduml
