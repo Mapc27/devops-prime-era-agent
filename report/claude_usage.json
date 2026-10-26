@@ -1,0 +1,37 @@
+{
+ "api_calls": 313,
+ "models": {
+  "claude-opus-5-5": 313
+ },
+ "user_prompts": 11,
+ "tool_calls": 329,
+ "tools": {
+  "Bash": 242,
+  "Write": 39,
+  "Read": 20,
+  "WebFetch": 15,
+  "WebSearch": 3,
+  "Monitor": 3,
+  "AskUserQuestion": 2,
+  "ToolSearch": 2,
+  "SendUserFile": 2,
+  "Edit": 1
+ },
+ "tokens": {
+  "input_tokens": 506619,
+  "output_tokens": 376912,
+  "cache_read_input_tokens": 107912188,
+  "cache_creation_input_tokens": 2161182
+ },
+ "tokens_total": 110956901,
+ "cache_hit_share": 0.976,
+ "context": {
+  "p50": 377849,
+  "p90": 583217,
+  "max": 640690,
+  "mean": 353290
+ },
+ "compactions": 1,
+ "first": "2026-10-12T13:05:02.431Z",
+ "last": "2026-10-26T20:17:17.117Z"
+}

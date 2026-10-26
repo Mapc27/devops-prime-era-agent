@@ -47,7 +47,7 @@ models-min:       ## only the models used at runtime (~20 GB)
 	@for m in tev1:4b granite4.2:8b ornith:9b gemma4:12b embeddinggemma-2; do ollama pull $$m; done
 
 charts:           ## charts + LangGraph render for the report
-	uv run python report/make_charts.py && uv run python report/render_graph.py
+	uv run python report/make_charts.py && uv run python report/render_graph.py && uv run python report/claude_usage.py
 
 eval-quick:
 	uv run python evals/run_evals.py --only questions dangerous knowledge
